@@ -141,7 +141,8 @@ def seek_people(asked_people):
         ascii=True,
         unit='page',
         mininterval=.3,
-        dynamic_ncols=True
+        dynamic_ncols=True,
+        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]'
     )
     for i, spec_page in enumerate(contents(future_jobs_spec)):
         progress_bar.update()

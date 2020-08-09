@@ -1,3 +1,4 @@
 requests==2.24.0
 requests-futures==1.0.0
 ahocorapy==1.5.2
+tqdm==4.48.2

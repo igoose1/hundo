@@ -1,8 +1,8 @@
 """admlist.py - search people in admlist.ru database
 
 Usage:
-  python admlist.py [--json]
-  python admlist.py [--json] < file_with_names
+  python admlist.py [--quiet] [--json]
+  python admlist.py [--quiet] [--json] < file_with_names
 
 Arguments:
   --json    Use json format for output"""
@@ -29,16 +29,19 @@ failed_universities = 0
 failed_directions = 0
 executor = ThreadPoolExecutor(max_workers=WORKERS)
 session = FuturesSession(executor)
+is_verbose = '--quiet' not in argv
 progress_bar_config = dict(
     ascii=True,
     unit='page',
     mininterval=.3,
     dynamic_ncols=True,
-    bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]'
+    bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]',
+    disable=not is_verbose
 )
 
 def log(*args, **kwargs):
-    print(*args, **kwargs, file=stderr)
+    if is_verbose:
+        print(*args, **kwargs, file=stderr)
 
 
 def contents(futures, with_url=False):

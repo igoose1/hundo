@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 SITE = 'http://admlist.ru/'
 TIMEOUT = 25
-WORKERS = min(32, cpu_count() + 5)
+WORKERS = min(32, cpu_count() * 4)
 
 failed_universities = 0
 failed_directions = 0

@@ -3,3 +3,10 @@
 /.venv/
 /env/
 /venv/
+
+# previous input and output files
+/upml_names.txt
+/upml.txt
+
+# new input file
+/names.txt

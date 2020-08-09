@@ -80,7 +80,7 @@ def get_page(url):
 
 
 def name_list():
-    result = [line.strip() for line in stdin.readlines()]
+    result = [line.strip() for line in stdin.readlines() if line]
     return result
 
 

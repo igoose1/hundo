@@ -14,7 +14,8 @@ SITE = 'http://admlist.ru/'
 TIMEOUT = 25
 WORKERS = min(32, cpu_count() + 5)
 
-failed_universities = failed_directions = 0
+failed_universities = 0
+failed_directions = 0
 executor = ThreadPoolExecutor(max_workers=WORKERS)
 session = FuturesSession(executor)
 

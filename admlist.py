@@ -1,6 +1,7 @@
 import re
 import time
 import urllib.request
+from sys import stdin
 from collections import defaultdict
 from concurrent.futures import as_completed
 
@@ -15,10 +16,7 @@ def get_page(url):
 
 
 def upml_list():
-    result = []
-    with open('upml_names.txt', 'r') as f:
-        for line in f.readlines():
-            result.append(line[:-1])
+    result = [line.strip() for line in stdin.readline()]
     return result
 
 
@@ -100,14 +98,13 @@ def seek_people(kwtree):
 
 
 def write(found):
-    with open('upml.txt', 'w') as f:
-        names = list(found.keys())
-        names.sort()
-        for name in names:
-            f.write(name + '\n')
-            for to in found[name]:
-                f.write("   " + to + '\n')
-            f.write('\n')
+    names = list(found.keys())
+    names.sort()
+    for name in names:
+        print(name)
+        for to in found[name]:
+            print("  ", to)
+        print()
 
 start = time.time()
 found = seek_people(name_kwtree(upml_list()))

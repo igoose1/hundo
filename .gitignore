@@ -8,5 +8,12 @@
 /upml_names.txt
 /upml.txt
 
-# new input file
+# new possible input and output filenames
 /names.txt
+/names
+/in
+/input
+/result.txt
+/result
+/out
+/output

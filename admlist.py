@@ -1,10 +1,9 @@
 import re
 import time
-import urllib.request
 from collections import defaultdict
-from concurrent.futures import as_completed, ThreadPoolExecutor
-from os import cpu_count, _exit
-from sys import stderr, stdin, exit
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from os import _exit, cpu_count
+from sys import exit, stderr, stdin
 
 import ahocorasick
 from requests_futures.sessions import FuturesSession

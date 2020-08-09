@@ -29,7 +29,13 @@ failed_universities = 0
 failed_directions = 0
 executor = ThreadPoolExecutor(max_workers=WORKERS)
 session = FuturesSession(executor)
-
+progress_bar_config = dict(
+    ascii=True,
+    unit='page',
+    mininterval=.3,
+    dynamic_ncols=True,
+    bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]'
+)
 
 def log(*args, **kwargs):
     print(*args, **kwargs, file=stderr)
@@ -115,7 +121,10 @@ def future_univ():
 def future_spec(future_jobs_univ):
     global failed_universities
     result = []
+
+    progress_bar = tqdm(**progress_bar_config, total=len(future_jobs_univ))
     for univ_page, url in contents(future_jobs_univ, with_url=True):
+        progress_bar.update()
         if univ_page is None:
             failed_universities += 1
             continue
@@ -123,6 +132,7 @@ def future_spec(future_jobs_univ):
             result.append(
                 session.get(url[: -len('index.html')] + spec_url)
             )
+    progress_bar.close()
     return result
 
 
@@ -146,14 +156,8 @@ def seek_people(asked_people):
     future_jobs_spec = future_spec(university_futures)
     result = defaultdict(list)
     log('looking for people in direction pages')
-    progress_bar = tqdm(
-        total=len(future_jobs_spec),
-        ascii=True,
-        unit='page',
-        mininterval=.3,
-        dynamic_ncols=True,
-        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]'
-    )
+
+    progress_bar = tqdm(**progress_bar_config, total=len(future_jobs_spec))
     for i, spec_page in enumerate(contents(future_jobs_spec)):
         progress_bar.update()
         if spec_page is None:

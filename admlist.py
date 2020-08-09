@@ -85,9 +85,9 @@ def line_content(line):
     return (name, comp_type, orig)
 
 
-def kwtree(name_list):
+def kwtree(asked_people):
     result = ahocorasick.Automaton()
-    for name in name_list:
+    for name in asked_people:
         result.add_word(name, name)
     result.make_automaton()
     return result

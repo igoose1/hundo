@@ -1,9 +1,19 @@
+"""admlist.py - search people in admlist.ru database
+
+Usage:
+  python admlist.py [--json]
+  python admlist.py [--json] < file_with_names
+
+Arguments:
+  --json    Use json format for output"""
+
+import json
 import re
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from os import _exit, cpu_count
-from sys import exit, stderr, stdin
+from sys import argv, exit, stderr, stdin
 
 import ahocorasick
 from requests_futures.sessions import FuturesSession
@@ -161,6 +171,9 @@ def seek_people(asked_people):
 
 
 if __name__ == '__main__':
+    if '--help' in argv:
+        log(__doc__)
+        exit(0)
     time_of_start = time.time()
     asked_people = name_list()
     try:
@@ -188,7 +201,9 @@ if __name__ == '__main__':
             failed_directions
         )
     )
-    for name, directions in sorted(found_people.items()):
-        print(name)
-        print(*('  ' + dir for dir in directions), sep='\n')
-
+    if '--json' in argv:
+        print(json.dumps(found_people, sort_keys=True, ensure_ascii=False))
+    else:
+        for name, directions in sorted(found_people.items()):
+            print(name)
+            print(*('  ' + dir for dir in directions), sep='\n')

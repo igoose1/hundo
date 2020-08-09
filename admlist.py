@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """admlist.py - search people in admlist.ru database
 
 Usage:

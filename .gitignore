@@ -1,4 +1,4 @@
-# ignore virtual environment directories
+# virtual environment directories
 /.env/
 /.venv/
 /env/
@@ -17,3 +17,6 @@
 /result
 /out
 /output
+
+# vim swp files
+.*.swp

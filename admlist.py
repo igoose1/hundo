@@ -110,6 +110,7 @@ def future_univ():
 
 
 def future_spec(future_jobs_univ):
+    global failed_universities
     result = []
     for univ_page, url in contents(future_jobs_univ, with_url=True):
         if univ_page is None:
@@ -134,6 +135,7 @@ def line(pos, page):
 
 
 def seek_people(asked_people):
+    global failed_directions
     automaton_of_ak = kwtree(asked_people)
 
     university_futures = future_univ()

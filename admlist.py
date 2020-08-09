@@ -75,13 +75,6 @@ def spec_name(spec_page):
     return result.replace('</a>', '')
 
 
-PEOPLE_TABLE_RE = re.compile(
-    r'<table class="tableFixHead">.*', flags=re.DOTALL
-)
-def people_table(spec_page):
-    return re.search(PEOPLE_TABLE_RE, spec_page).group(0)
-
-
 def line_content(line):
     prop = line.split('</td><td>')
     for i in range(len(prop)):
@@ -155,10 +148,9 @@ def seek_people(asked_people):
         if spec_page is None:
             failed_directions += 1
             continue
-        table = people_table(spec_page)
-        found = automaton_of_ak.iter(table)
+        found = automaton_of_ak.iter(spec_page)
         for end_index, _ in found:
-            content = line_content(line(end_index, table))
+            content = line_content(line(end_index, spec_page))
             result[content[0]].append(
                 spec_name(spec_page) + ' ' + content[1] + content[2]
             )

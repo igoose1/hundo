@@ -1,12 +1,14 @@
-import urllib.request
 import re
-from collections import defaultdict
 import time
-from requests_futures.sessions import FuturesSession
+import urllib.request
+from collections import defaultdict
 from concurrent.futures import as_completed
-from ahocorapy.keywordtree import KeywordTree
 
-site = 'http://admlist.ru/'
+from ahocorapy.keywordtree import KeywordTree
+from requests_futures.sessions import FuturesSession
+
+SITE = 'http://admlist.ru/'
+
 
 def get_page(url):
     return urllib.request.urlopen(url, timeout=50).read().decode()
@@ -21,8 +23,7 @@ def upml_list():
 
 
 def univ_list():
-    global site
-    main_page = get_page(site)
+    main_page = get_page(SITE)
     result = (re.findall(r'=[\w-]*/', s)[0][1:] for s in re.findall(r'href=[\w-]*/index.html>[\w-]*<', main_page))
     return result
 
@@ -62,7 +63,7 @@ def name_kwtree(name_list):
 def future_univ(s):
     result = []
     for univ_url in univ_list():
-        result.append(s.get(site + univ_url + 'index.html'))
+        result.append(s.get(SITE + univ_url + 'index.html'))
     return result
 
 

@@ -6,7 +6,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from os import cpu_count, _exit
 from sys import stderr, stdin, exit
 
-from ahocorapy.keywordtree import KeywordTree
+import ahocorasick
 from requests_futures.sessions import FuturesSession
 from tqdm import tqdm
 
@@ -92,10 +92,10 @@ def line_content(line):
 
 
 def kwtree(name_list):
-    result = KeywordTree(case_insensitive=True)
+    result = ahocorasick.Automaton()
     for name in name_list:
-        result.add(name)
-    result.finalize()
+        result.add_word(name, name)
+    result.make_automaton()
     return result
 
 
@@ -133,7 +133,7 @@ def line(pos, page):
 
 
 def seek_people(asked_people):
-    _kwtree = kwtree(asked_people)
+    automaton_of_ak = kwtree(asked_people)
 
     university_futures = future_univ()
     log('looking for possible direction pages')
@@ -152,11 +152,9 @@ def seek_people(asked_people):
             failed_directions += 1
             continue
         table = people_table(spec_page)
-        found = _kwtree.search_all(table)
-        if found is None:
-            continue
-        for _, shift in found:
-            content = line_content(line(shift, table))
+        found = automaton_of_ak.iter(table)
+        for end_index, _ in found:
+            content = line_content(line(end_index, table))
             result[content[0]].append(
                 spec_name(spec_page) + ' ' + content[1] + content[2]
             )

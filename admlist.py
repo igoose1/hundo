@@ -182,7 +182,7 @@ if __name__ == '__main__':
         stat.format(
             time.time() - time_of_start,
             len(found_people),
-            len(asked_people) / len(found_people) * 100,
+            len(found_people) / len(asked_people) * 100,
             failed_universities,
             failed_directions
         )

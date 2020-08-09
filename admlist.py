@@ -13,6 +13,8 @@ from tqdm import tqdm
 SITE = 'http://admlist.ru/'
 TIMEOUT = 25
 WORKERS = min(32, cpu_count() * 4)
+# do not afraid of worker number
+# they take web-requests so they must be lightweight
 
 failed_universities = 0
 failed_directions = 0
@@ -143,11 +145,12 @@ def seek_people(asked_people):
     progress_bar = tqdm(
         total=len(future_jobs_spec),
         ascii=True,
-        unit='page'
+        unit='page',
+        mininterval=.3,
+        dynamic_ncols=True
     )
     for i, spec_page in enumerate(contents(future_jobs_spec)):
-        if i % 3 == 0:
-            progress_bar.update(3)
+        progress_bar.update()
         if spec_page is None:
             failed_directions += 1
             continue
@@ -158,6 +161,7 @@ def seek_people(asked_people):
             result[content[0]].append(
                 spec_name(spec_page) + ' ' + content[1] + content[2]
             )
+    progress_bar.close()
     log('pages were parsed')
     return result
 

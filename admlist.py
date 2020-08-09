@@ -43,7 +43,7 @@ def get_page(url):
     return list(contents([future]))[0]
 
 
-def upml_list():
+def name_list():
     result = [line.strip() for line in stdin.readlines()]
     return result
 
@@ -169,7 +169,7 @@ def seek_people(asked_people):
 
 if __name__ == '__main__':
     time_of_start = time.time()
-    asked_people = upml_list()
+    asked_people = name_list()
     try:
         found_people = seek_people(asked_people)
     except KeyboardInterrupt:

@@ -47,7 +47,7 @@ def log(*args, **kwargs):
 def contents(futures, with_url=False):
     for future in as_completed(futures):
         try:
-            content = future.result().content.decode()
+            content = future.result().content.decode(errors='ignore')
         except Exception as e:
             log(e)
             content = None

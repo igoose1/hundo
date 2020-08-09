@@ -2,9 +2,9 @@ import re
 import time
 import urllib.request
 from collections import defaultdict
-from concurrent.futures import as_completed
-from os import cpu_count
-from sys import stderr, stdin
+from concurrent.futures import as_completed, ThreadPoolExecutor
+from os import cpu_count, _exit
+from sys import stderr, stdin, exit
 
 from ahocorapy.keywordtree import KeywordTree
 from requests_futures.sessions import FuturesSession
@@ -15,6 +15,8 @@ TIMEOUT = 25
 WORKERS = min(32, cpu_count() + 5)
 
 failed_universities = failed_directions = 0
+executor = ThreadPoolExecutor(max_workers=WORKERS)
+session = FuturesSession(executor)
 
 
 def log(*args, **kwargs):
@@ -34,7 +36,7 @@ def contents(futures, with_url=False):
             yield content
 
 
-def get_page(session, url):
+def get_page(url):
     future = session.get(url, timeout=TIMEOUT)
     return list(contents([future]))[0]
 
@@ -46,8 +48,8 @@ def upml_list():
 
 UNIV_LIST_RE = re.compile(r'=[\w-]*/')
 UNIV_LIST_LINK_RE = re.compile(r'href=[\w-]*/index.html>[\w-]*<')
-def univ_list(session):
-    main_page = get_page(session, SITE)
+def univ_list():
+    main_page = get_page(SITE)
     result = []
     for s in re.findall(UNIV_LIST_LINK_RE, main_page):
         result.append(
@@ -96,16 +98,16 @@ def kwtree(name_list):
     return result
 
 
-def future_univ(session):
+def future_univ():
     result = []
-    for u in univ_list(session):
+    for u in univ_list():
         result.append(
             session.get(SITE + u + 'index.html')
         )
     return result
 
 
-def future_spec(session, future_jobs_univ):
+def future_spec(future_jobs_univ):
     result = []
     for univ_page, url in contents(future_jobs_univ, with_url=True):
         if univ_page is None:
@@ -130,12 +132,11 @@ def line(pos, page):
 
 
 def seek_people(asked_people):
-    session = FuturesSession(max_workers=WORKERS)
     _kwtree = kwtree(asked_people)
 
-    university_futures = future_univ(session)
+    university_futures = future_univ()
     log('looking for possible direction pages')
-    future_jobs_spec = future_spec(session, university_futures)
+    future_jobs_spec = future_spec(university_futures)
     result = defaultdict(list)
     log('looking for people in direction pages')
     progress_bar = tqdm(
@@ -143,8 +144,9 @@ def seek_people(asked_people):
         ascii=True,
         unit='page'
     )
-    for spec_page in contents(future_jobs_spec):
-        progress_bar.update()
+    for i, spec_page in enumerate(contents(future_jobs_spec)):
+        if i % 3 == 0:
+            progress_bar.update(3)
         if spec_page is None:
             failed_directions += 1
             continue
@@ -164,10 +166,18 @@ def seek_people(asked_people):
 if __name__ == '__main__':
     time_of_start = time.time()
     asked_people = upml_list()
-    found_people = seek_people(asked_people)
-    for name, directions in sorted(found_people.items()):
-        print(name)
-        print(*('  ' + dir for dir in directions), sep='\n')
+    try:
+        found_people = seek_people(asked_people)
+    except KeyboardInterrupt:
+        log('force exit, wait')
+        try:
+            executor.shutdown(wait=False)
+            log('bye')
+            exit(130)
+        except KeyboardInterrupt:
+            log('you did a terrible thing')
+            _exit(130)
+
     stat = 'completed in {:.2f} seconds\n' +\
         'found {:d} people ({:.1f}% of asked)\n' +\
         '{:d} university pages failed\n' +\
@@ -181,3 +191,7 @@ if __name__ == '__main__':
             failed_directions
         )
     )
+    for name, directions in sorted(found_people.items()):
+        print(name)
+        print(*('  ' + dir for dir in directions), sep='\n')
+

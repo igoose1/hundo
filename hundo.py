@@ -30,16 +30,15 @@ import json
 import re
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from os import _exit, cpu_count
 from sys import argv, exit, stderr, stdin
 
 import ahocorasick
 from requests_futures.sessions import FuturesSession
-from tqdm import tqdm
-
 from rich.console import Console
 from rich.table import Table
+from tqdm import tqdm
 
 SITE = 'http://admlist.ru/'
 TIMEOUT = 25
@@ -66,22 +65,28 @@ def log(*args, **kwargs):
         print(*args, **kwargs, file=stderr)
 
 
-def contents(futures, with_url=False):
-    for future in as_completed(futures):
-        try:
-            content = future.result().content.decode(errors='ignore')
-        except Exception as e:
-            log(e)
-            content = None
-        if with_url:
-            yield content, future.result().url
-        else:
-            yield content
+def future_results(futures):
+    not_done = futures
+    while not_done:
+        done, not_done = wait(not_done, timeout=TIMEOUT, return_when=FIRST_COMPLETED)
+        for future in done:
+            try:
+                future_result = future.result()
+                content = future_result.content.decode(errors='ignore')
+                url = future_result.url
+            except Exception as e:
+                log(e)
+                content, url = None, None
+            yield content, url
+        if len(done) == 0:
+            for n in range(len(not_done)):
+                yield None, None
+            break
 
 
 def get_page(url):
     future = session.get(url, timeout=TIMEOUT)
-    return list(contents([future]))[0]
+    return list(future_results([future]))[0][0]
 
 
 def name_list():
@@ -140,9 +145,8 @@ def future_spec(future_jobs_univ):
     global failed_universities
     result = []
 
-
     progress_bar = tqdm(**progress_bar_config, total=len(future_jobs_univ))
-    for univ_page, url in contents(future_jobs_univ, with_url=True):
+    for univ_page, url in future_results(future_jobs_univ):
         if univ_page is None:
             failed_universities += 1
             progress_bar.update()
@@ -188,7 +192,7 @@ def seek_people(asked_people):
     log('looking for people in direction pages')
 
     progress_bar = tqdm(**progress_bar_config, total=len(future_jobs_spec))
-    for i, spec_page in enumerate(contents(future_jobs_spec)):
+    for i, (spec_page, _) in enumerate(future_results(future_jobs_spec)):
         if spec_page is None:
             failed_directions += 1
             progress_bar.update()

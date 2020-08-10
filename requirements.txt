@@ -2,3 +2,4 @@ requests==2.24.0
 requests-futures==1.0.0
 tqdm==4.48.2
 pyahocorasick==1.4.0
+rich==5.1.1

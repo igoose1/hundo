@@ -18,11 +18,12 @@
 """admlist.py - search people in admlist.ru database
 
 Usage:
-  python admlist.py [--quiet] [--json]
-  python admlist.py [--quiet] [--json] < file_with_names
+  python admlist.py [--quiet] [--json | --raw]
+  python admlist.py [--quiet] [--json | --raw] < file_with_names
 
 Arguments:
-  --json    Use json format for output"""
+  --json    Use json format for output.
+  --raw     Use plain text for output."""
 
 import json
 import re
@@ -35,6 +36,9 @@ from sys import argv, exit, stderr, stdin
 import ahocorasick
 from requests_futures.sessions import FuturesSession
 from tqdm import tqdm
+
+from rich.console import Console
+from rich.table import Table
 
 SITE = 'http://admlist.ru/'
 TIMEOUT = 25
@@ -111,16 +115,6 @@ def spec_name(spec_page):
     return result.replace('</a>', '')
 
 
-def line_content(line):
-    prop = line.split('</td><td>')
-    for i in range(len(prop)):
-        prop[i] = prop[i][3:-4] if prop[i][:2] == '<b' else prop[i]
-    name = prop[3]
-    orig = ' +' if prop[4] == 'Да' else ''
-    comp_type = prop[5]
-    return (name, comp_type, orig)
-
-
 def kwtree(asked_people):
     result = ahocorasick.Automaton()
     for name in asked_people:
@@ -142,18 +136,30 @@ def future_spec(future_jobs_univ):
     global failed_universities
     result = []
 
+
     progress_bar = tqdm(**progress_bar_config, total=len(future_jobs_univ))
     for univ_page, url in contents(future_jobs_univ, with_url=True):
-        progress_bar.update()
         if univ_page is None:
             failed_universities += 1
+            progress_bar.update()
             continue
         for spec_url in spec_list(univ_page):
             result.append(
                 session.get(url[: -len('index.html')] + spec_url)
             )
+        progress_bar.update()
     progress_bar.close()
     return result
+
+
+def line_content(line):
+    prop = line.split('</td><td>')
+    for i in range(len(prop)):
+        prop[i] = prop[i][3:-4] if prop[i][:2] == '<b' else prop[i]
+    name = prop[3]
+    agreement = prop[4] == 'Да'
+    comp_type = prop[5]
+    return name, comp_type, agreement
 
 
 def line(pos, page):
@@ -179,16 +185,21 @@ def seek_people(asked_people):
 
     progress_bar = tqdm(**progress_bar_config, total=len(future_jobs_spec))
     for i, spec_page in enumerate(contents(future_jobs_spec)):
-        progress_bar.update()
         if spec_page is None:
             failed_directions += 1
+            progress_bar.update()
             continue
         found = automaton_of_ak.iter(spec_page)
         for end_index, _ in found:
-            content = line_content(line(end_index, spec_page))
-            result[content[0]].append(
-                spec_name(spec_page) + ' ' + content[1] + content[2]
+            name, comp_type, agreement = line_content(line(end_index, spec_page))
+            result[name].append(
+                {
+                    'spec': spec_name(spec_page),
+                    'type': comp_type,
+                    'agreement': agreement
+                }
             )
+        progress_bar.update()
     progress_bar.close()
     log('pages were parsed')
     return result
@@ -227,7 +238,28 @@ if __name__ == '__main__':
     )
     if '--json' in argv:
         print(json.dumps(found_people, sort_keys=True, ensure_ascii=False))
-    else:
+    elif '--raw' in argv:
         for name, directions in sorted(found_people.items()):
             print(name)
-            print(*('  ' + dir for dir in directions), sep='\n')
+            for direction in directions:
+                output_line = ' '.join([
+                    direction['spec'],
+                    direction['type'],
+                    '+' if direction['agreement'] else '-'
+                ])
+                print('  ', output_line)
+    else:
+        console = Console()
+        for name, directions in sorted(found_people.items()):
+            table = Table(title=name, header_style='bold', expand=True)
+            table.add_column('Программа')
+            table.add_column('Тип', justify='center', style='magenta3')
+            table.add_column('Согласие?', justify='center', style='cyan')
+            for direction in directions:
+                table.add_row(
+                    direction['spec'],
+                    direction['type'],
+                    '[green]+[/green]' if direction['agreement'] else '-'
+                )
+            console.print(table)
+

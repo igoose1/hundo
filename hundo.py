@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""admlist.py - search people in admlist.ru database
+"""hundo.py - search enrollees in admlist.ru database
 
 Usage:
-  python admlist.py [--quiet] [--json | --raw]
-  python admlist.py [--quiet] [--json | --raw] < file_with_names
+  python hundo.py [--quiet] [--json | --raw]
+  python hundo.py [--quiet] [--json | --raw] < file_with_names
 
 Arguments:
   --quiet   Do not output in stderr.

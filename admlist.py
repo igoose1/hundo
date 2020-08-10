@@ -85,7 +85,10 @@ def get_page(url):
 
 
 def name_list():
-    result = [line.strip() for line in stdin.readlines() if line]
+    result = []
+    for line in map(lambda x: x.strip(), stdin.readlines()):
+        if not line.startswith('#') and line:
+            result.append(line)
     return result
 
 

@@ -22,6 +22,7 @@ Usage:
   python admlist.py [--quiet] [--json | --raw] < file_with_names
 
 Arguments:
+  --quiet   Do not output in stderr.
   --json    Use json format for output.
   --raw     Use plain text for output."""
 

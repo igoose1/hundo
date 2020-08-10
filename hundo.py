@@ -86,7 +86,9 @@ def future_results(futures):
 
 def get_page(url):
     future = session.get(url, timeout=TIMEOUT)
-    return list(future_results([future]))[0][0]
+    g = future_results([future])
+    page, _ = next(g)
+    return page
 
 
 def name_list():

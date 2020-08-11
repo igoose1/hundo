@@ -99,7 +99,7 @@ def name_list():
     return result
 
 
-UNIV_LIST_LINK_RE = re.compile(r'href=[\w-]*/index.html>')
+UNIV_LIST_LINK_RE = re.compile(r'href=[\w\d-]*/index.html>')
 def univ_list():
     main_page = get_page(SITE)
     result = []

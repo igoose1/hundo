@@ -99,14 +99,13 @@ def name_list():
     return result
 
 
-UNIV_LIST_RE = re.compile(r'=[\w-]*/')
-UNIV_LIST_LINK_RE = re.compile(r'href=[\w-]*/index.html>[\w-]*<')
+UNIV_LIST_LINK_RE = re.compile(r'href=[\w-]*/index.html>')
 def univ_list():
     main_page = get_page(SITE)
     result = []
     for s in re.findall(UNIV_LIST_LINK_RE, main_page):
         result.append(
-            re.findall(UNIV_LIST_RE, s)[0][1:]
+                s[len('href='): -len('index.html>')]
         )
     return result
 

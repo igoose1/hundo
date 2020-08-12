@@ -29,6 +29,7 @@ Arguments:
 import json
 import re
 import time
+import datetime
 from collections import defaultdict
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from os import _exit, cpu_count
@@ -48,6 +49,8 @@ WORKERS = min(32, cpu_count() * 4)
 
 failed_universities = 0
 failed_directions = 0
+traffic_length = 0
+elapsed_time = datetime.timedelta()
 executor = ThreadPoolExecutor(max_workers=WORKERS)
 session = FuturesSession(executor)
 is_verbose = '--quiet' not in argv
@@ -66,6 +69,7 @@ def log(*args, **kwargs):
 
 
 def future_results(futures):
+    global traffic_length, elapsed_time
     not_done = futures
     while not_done:
         done, not_done = wait(not_done, timeout=TIMEOUT, return_when=FIRST_COMPLETED)
@@ -74,6 +78,8 @@ def future_results(futures):
                 future_result = future.result()
                 content = future_result.content.decode(errors='ignore')
                 url = future_result.url
+                traffic_length += len(future_result.content)
+                elapsed_time += future_result.elapsed
             except Exception as e:
                 log(e)
                 content, url = None, None
@@ -233,12 +239,14 @@ if __name__ == '__main__':
             _exit(130)
 
     stat = 'completed in {:.2f} seconds\n' +\
+        'on web-pages: {:.2f} seconds ({:.2f} mB)\n' +\
         'found {:d} people ({:.1f}% of asked)\n' +\
         '{:d} university pages failed\n' +\
         '{:d} direction pages failed\n'
     log(
         stat.format(
             time.time() - time_of_start,
+            elapsed_time.total_seconds(), traffic_length * 1e-6,
             len(found_people),
             len(found_people) / len(asked_people) * 100,
             failed_universities,

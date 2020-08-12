@@ -31,6 +31,7 @@ import re
 import time
 import datetime
 from collections import defaultdict
+from hashlib import md5
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from os import _exit, cpu_count
 from sys import argv, exit, stderr, stdin
@@ -68,7 +69,7 @@ def log(*args, **kwargs):
         print(*args, **kwargs, file=stderr)
 
 
-def future_results(futures):
+def future_results(futures, as_json=False):
     global traffic_length, elapsed_time
     not_done = futures
     while not_done:
@@ -76,7 +77,10 @@ def future_results(futures):
         for future in done:
             try:
                 future_result = future.result()
-                content = future_result.content.decode(errors='ignore')
+                if as_json:
+                    content = future_result.json()
+                else:
+                    content = future_result.content.decode(errors='ignore')
                 url = future_result.url
                 traffic_length += len(future_result.content)
                 elapsed_time += future_result.elapsed
@@ -219,6 +223,41 @@ def seek_people(asked_people):
     return result
 
 
+def search_by_hashes(asked_people):
+    def _hash(s):
+        return md5(s.encode()).hexdigest()
+
+
+    def parse(s):
+        # that's as example:
+        # ИТМО, Программная инженерия (09.03.04), ОК [Б], №: 123, №*: 456, №**: 789
+        agreement = False
+        if '<b>' in s:
+            s = s[3: -4]
+            agreement = True
+        splitted = s.split(', ')
+        spec, type = ..., ...  # WIP
+        pass
+
+
+
+    hashes_by_its_starts = defaultdict(list)
+    for name in asked_people:
+        # if it doesn't match Фамилия Имя Отчество
+        if name.count(' ') != 2:
+            log('{:s} ignores: not ФИО'.format(name))
+            continue
+        h = _hash(name)
+        hashes_by_its_starts[h[: 2]].append(h)
+    json_url = SITE + 'fio/{}.json'
+    futures = []
+    for short_hash in hashes_by_its_starts:
+        url = json_url.format(short_hash)
+        futures.append(session.get(url))
+    for json, url in future_results(futures, as_json=True):
+        pass  # WIP
+
+
 if __name__ == '__main__':
     if '--help' in argv:
         log(__doc__)
@@ -226,7 +265,10 @@ if __name__ == '__main__':
     time_of_start = time.time()
     asked_people = name_list()
     try:
-        found_people = seek_people(asked_people)
+        if '--fast' in argv:
+            found_people = search_by_hashes(asked_people)
+        else:
+            found_people = seek_people(asked_people)
     except KeyboardInterrupt:
         log('force exit, wait')
         try:

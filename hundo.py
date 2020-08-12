@@ -216,7 +216,6 @@ def seek_people(asked_people):
             )
         progress_bar.update()
     progress_bar.close()
-    log('pages were parsed')
     return result
 
 
@@ -240,9 +239,9 @@ if __name__ == '__main__':
 
     stat = 'completed in {:.2f} seconds\n' +\
         'on web-pages: {:.2f} seconds ({:.2f} mB)\n' +\
-        'found {:d} people ({:.1f}% of asked)\n' +\
-        '{:d} university pages failed\n' +\
-        '{:d} direction pages failed\n'
+        'total found people: {:d} ({:.1f}% of asked)\n' +\
+        'failed university pages: {:d}\n' +\
+        'failed direction pages: {:d}\n'
     log(
         stat.format(
             time.time() - time_of_start,

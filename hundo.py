@@ -223,23 +223,23 @@ def seek_people(asked_people):
     return result
 
 
+def parse_from_json(s):
+    # that's as an example:
+    # ИТМО, Программная инженерия (09.03.04), ОК [Б], №: 123, №*: 456, №**: 789
+    agreement = False
+    if '<b>' in s:
+        s = s[3: -4]
+        agreement = True
+    spec = s[:s.index('[')]
+    spec = spec[:spec.rindex(',')]
+    comp_type = s[len(spec) + 2:]
+    comp_type = comp_type[:comp_type.index(',')]
+    return spec, comp_type, agreement
+
+
 def search_by_hashes(asked_people):
     def _hash(s):
         return md5(s.encode()).hexdigest()
-
-
-    def parse(s):
-        # that's as example:
-        # ИТМО, Программная инженерия (09.03.04), ОК [Б], №: 123, №*: 456, №**: 789
-        agreement = False
-        if '<b>' in s:
-            s = s[3: -4]
-            agreement = True
-        spec = s[:s.index('[')]
-        spec = spec[:spec.rindex(',')]
-        comp_type = s[len(spec) + 2:]
-        comp_type = comp_type[:comp_type.index(',')]
-        return spec, comp_type, agreement
 
 
     hashes_by_its_starts = defaultdict(list)

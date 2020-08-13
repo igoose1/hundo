@@ -235,10 +235,11 @@ def search_by_hashes(asked_people):
         if '<b>' in s:
             s = s[3: -4]
             agreement = True
-        splitted = s.split(', ')
-        spec, type = ..., ...  # WIP
-        pass
-
+        spec = s[:s.index('[')]
+        spec = spec[:spec.rindex(',')]
+        comp_type = s[len(spec) + 2:]
+        comp_type = comp_type[:comp_type.index(',')]
+        return spec, comp_type, agreement
 
 
     hashes_by_its_starts = defaultdict(list)

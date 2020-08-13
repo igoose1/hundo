@@ -21,7 +21,12 @@ Usage:
   python hundo.py [--quiet] [--json | --raw]
   python hundo.py [--quiet] [--json | --raw] < file_with_names
 
+  python hundo.py --fast [--quiet] [--json | --raw] < file_with_names
+  python hundo.py --fast [--quiet] [--json | --raw]
+
 Arguments:
+  --fast    Enable fast-mode which requires full name (ФИО).
+
   --quiet   Do not output in stderr.
   --json    Use json format for output.
   --raw     Use plain text for output."""
@@ -31,6 +36,7 @@ import re
 import time
 import datetime
 from collections import defaultdict
+from hashlib import md5
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from os import _exit, cpu_count
 from sys import argv, exit, stderr, stdin
@@ -68,7 +74,7 @@ def log(*args, **kwargs):
         print(*args, **kwargs, file=stderr)
 
 
-def future_results(futures):
+def future_results(futures, as_json=False):
     global traffic_length, elapsed_time
     not_done = futures
     while not_done:
@@ -76,7 +82,10 @@ def future_results(futures):
         for future in done:
             try:
                 future_result = future.result()
-                content = future_result.content.decode(errors='ignore')
+                if as_json:
+                    content = future_result.json()
+                else:
+                    content = future_result.content.decode(errors='ignore')
                 url = future_result.url
                 traffic_length += len(future_result.content)
                 elapsed_time += future_result.elapsed
@@ -219,6 +228,66 @@ def seek_people(asked_people):
     return result
 
 
+def parse_from_json(s):
+    # that's as an example:
+    # ИТМО, Программная инженерия (09.03.04), ОК [Б], №: 123, №*: 456, №**: 789
+    agreement = False
+    if '<b>' in s:
+        s = s[3: -4]
+        agreement = True
+    spec = s[:s.index('[')]
+    spec = spec[:spec.rindex(',')]
+    comp_type = s[len(spec) + 2:]
+    comp_type = comp_type[:comp_type.index(',')]
+    return spec, comp_type, agreement
+
+
+def search_by_hashes(asked_people):
+    class hasher:
+        def __init__(self):
+            self.cache = dict()
+
+        def __call__(self, s):
+            if s not in self.cache:
+                self.cache[s] = md5(s.encode()).hexdigest()
+            return self.cache[s]
+
+
+    h = hasher()
+    hashes_by_its_starts = defaultdict(list)
+    for name in asked_people:
+        # if it doesn't match Фамилия Имя Отчество
+        if name.count(' ') != 2:
+            log('ignore {:s}: not ФИО'.format(name))
+            continue
+        hashes_by_its_starts[h(name)[: 2]].append(
+            (h(name), name)
+        )
+    json_url = SITE + 'fio/{}.json'
+    futures = []
+    for short_hash in hashes_by_its_starts:
+        url = json_url.format(short_hash)
+        futures.append(session.get(url))
+    result = defaultdict(list)
+    for json, url in future_results(futures, as_json=True):
+        if json is None:
+            continue
+        short_hash = url[: url.rindex('.json')][-2:]
+        for h, name in hashes_by_its_starts[short_hash]:
+            if h not in json:
+                continue
+            for _, string in json[h]:
+                spec, comp_type, agreement = parse_from_json(string)
+                result[name].append(
+                    {
+                        'spec': spec,
+                        'type': comp_type,
+                        'agreement': agreement
+                    }
+                )
+    return result
+
+
 if __name__ == '__main__':
     if '--help' in argv:
         log(__doc__)
@@ -226,7 +295,10 @@ if __name__ == '__main__':
     time_of_start = time.time()
     asked_people = name_list()
     try:
-        found_people = seek_people(asked_people)
+        if '--fast' in argv:
+            found_people = search_by_hashes(asked_people)
+        else:
+            found_people = seek_people(asked_people)
     except KeyboardInterrupt:
         log('force exit, wait')
         try:

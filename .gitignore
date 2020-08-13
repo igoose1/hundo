@@ -20,3 +20,7 @@
 
 # vim swp files
 .*.swp
+
+# python cache files
+__pycache__/
+*.pyc

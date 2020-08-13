@@ -21,7 +21,12 @@ Usage:
   python hundo.py [--quiet] [--json | --raw]
   python hundo.py [--quiet] [--json | --raw] < file_with_names
 
+  python hundo.py --fast [--quiet] [--json | --raw] < file_with_names
+  python hundo.py --fast [--quiet] [--json | --raw]
+
 Arguments:
+  --fast    Enable fast-mode which requires full name (ФИО).
+
   --quiet   Do not output in stderr.
   --json    Use json format for output.
   --raw     Use plain text for output."""
@@ -238,25 +243,49 @@ def parse_from_json(s):
 
 
 def search_by_hashes(asked_people):
-    def _hash(s):
-        return md5(s.encode()).hexdigest()
+    class hasher:
+        def __init__(self):
+            self.cache = dict()
+
+        def __call__(self, s):
+            if s not in self.cache:
+                self.cache[s] = md5(s.encode()).hexdigest()
+            return self.cache[s]
 
 
+    h = hasher()
     hashes_by_its_starts = defaultdict(list)
     for name in asked_people:
         # if it doesn't match Фамилия Имя Отчество
         if name.count(' ') != 2:
-            log('{:s} ignores: not ФИО'.format(name))
+            log('ignore {:s}: not ФИО'.format(name))
             continue
-        h = _hash(name)
-        hashes_by_its_starts[h[: 2]].append(h)
+        hashes_by_its_starts[h(name)[: 2]].append(
+            (h(name), name)
+        )
     json_url = SITE + 'fio/{}.json'
     futures = []
     for short_hash in hashes_by_its_starts:
         url = json_url.format(short_hash)
         futures.append(session.get(url))
+    result = defaultdict(list)
     for json, url in future_results(futures, as_json=True):
-        pass  # WIP
+        if json is None:
+            continue
+        short_hash = url[: url.rindex('.json')][-2:]
+        for h, name in hashes_by_its_starts[short_hash]:
+            if h not in json:
+                continue
+            for _, string in json[h]:
+                spec, comp_type, agreement = parse_from_json(string)
+                result[name].append(
+                    {
+                        'spec': spec,
+                        'type': comp_type,
+                        'agreement': agreement
+                    }
+                )
+    return result
 
 
 if __name__ == '__main__':

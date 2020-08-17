@@ -37,6 +37,9 @@ FAQ
 	командную строку или терминал и введите туда строчку из пункта "Требования".
 	Далее, изучите данный сайт:
 	https://realpython.com/run-python-scripts/#how-to-run-python-scripts-using-the-command-line
+	Если вы запускаете скрипт с ОС Windows, вам могут потребоваться плюсовые
+	библиотеки:
+	https://stackoverflow.com/questions/44951456/pip-error-microsoft-visual-c-14-0-is-required
 
 Почему скрипт работает так долго?
 

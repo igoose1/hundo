@@ -256,10 +256,6 @@ def search_by_hashes(asked_people):
     h = hasher()
     hashes_by_its_starts = defaultdict(list)
     for name in asked_people:
-        # if it doesn't match Фамилия Имя Отчество
-        if name.count(' ') != 2:
-            log('ignore {:s}: not ФИО'.format(name))
-            continue
         hashes_by_its_starts[h(name)[: 2]].append(
             (h(name), name)
         )
